@@ -24,6 +24,9 @@ int main(int argc, char** argv)
     cv::Mat image1 = cv::imread("./alaor.jpg");
     cv::Mat image2 = cv::imread("./silentlives.jpg");
 
+    float sums[image1.rows];
+    memset(sums, 0.f, sizeof(sums));
+
     if (withOCLUtil)
     {
         OCLutil ocl(CL_DEVICE_TYPE_GPU,"imgProc.cl","","paracinza,sub",2);
@@ -40,16 +43,13 @@ int main(int argc, char** argv)
         cv::cvtColor(imgSaida,imgSaida,CV_BGR2RGBA);
 
         ocl.CarregarCVMat(imgSaida, 1, 2, true);
-        
-        float sums[image1.rows];
-        memset(sums, 0.f, sizeof(sums));
-
+                
         ocl.CarregarBuffer(sums,image1.rows, 1, 3, true);
 
         ocl.Exec(1,cl::NDRange(image1.cols, image1.rows),cl::NullRange);
 
         ocl.LerBufferImg(imgSaida, 2);
-        ocl.LerBuffer(sums,image1.rows, 2);
+        ocl.LerBuffer(sums,image1.rows, 0);
 
         for(int i = 0;i<image1.rows;i++){
             std::cout<<"sum["<<i<<"]= "<<sums[i]<<std::endl;
@@ -151,9 +151,6 @@ int main(int argc, char** argv)
         cl::Image2D clImage2 = cl::Image2D(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
                                     cl::ImageFormat(CL_RGBA,CL_FLOAT), image2.cols,
                                     image2.rows, 0, image2.data);
-
-        float sums[image1.rows];
-        memset(sums, 0.f, sizeof(sums));
 
         cl::Buffer clsums = cl::Buffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
                                  sizeof(float)*(image1.rows), sums);

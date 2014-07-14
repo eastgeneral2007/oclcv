@@ -184,7 +184,7 @@ void OCLutil::LerBufferImg(cv::Mat &cvMat, int indexParam){
     }
 }
 
-void OCLutil::LerBuffer(float *buffer, int tam, int indexParam){
+void OCLutil::LerBuffer(float *buffer, int tam, int indexParam){    
     queue.enqueueReadBuffer(clbffer[indexParam],CL_TRUE,0,sizeof(float)*(tam),buffer);
 }
 
