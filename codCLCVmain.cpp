@@ -9,7 +9,7 @@
 int main(int argc, char** argv)
 {
     bool withOCLUtil;
-    argc > 1 ? withOCLUtil = true : withOCLUtil = false;
+    argc == 1 ? withOCLUtil = true : withOCLUtil = false;
     withOCLUtil ? std::cout << "Usando classe OCLUtil" << std::endl : std::cout << "Usando OCL padrão" << std::endl;
 
     std::string filename = "imgProc.cl";
@@ -29,7 +29,7 @@ int main(int argc, char** argv)
         OCLutil ocl(CL_DEVICE_TYPE_GPU,"imgProc.cl","","paracinza,sub",2);
 
         ocl.CarregarCVMat(image1, 1, 0, false);
-        ocl.CarregarCVMat(image1, 1, 1, false);
+        ocl.CarregarCVMat(image2, 1, 1, false);
 
         image1.convertTo(image1,CV_32FC3);
         image2.convertTo(image2,CV_32FC3);

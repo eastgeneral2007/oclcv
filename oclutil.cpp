@@ -113,18 +113,8 @@ void OCLutil::CarregarCVMat(cv::Mat cvMat, int indexRot, int indexParam, bool es
 
         climg.push_back(clImage);
 
-        cv::cvtColor(cvMat,cvMat,CV_RGBA2BGR);
-
-        cvMat.convertTo(cvMat,CV_8UC3);
-
-        cv::imshow("entrada"+indexParam,cvMat);
-
         rotina[indexRot].setArg(indexParam,clImage);
-
-
 }
-
-
 
 void OCLutil::Exec(int indexRot,cl::NDRange tamGlobal,cl::NDRange tamLoc){
     cl_int error = queue.enqueueNDRangeKernel(
