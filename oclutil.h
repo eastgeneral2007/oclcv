@@ -12,12 +12,14 @@ class OCLutil
 public:
     OCLutil(cl_device_type type, std::string aqr, std::string buildOptions, std::string nomeRot, int n);
     void Exec(int indexRot, cl::NDRange tamGlobal, cl::NDRange tamLoc);
-    void CarregarCVMat(cv::Mat cvMat, int indexRot, int indexParam, bool escrita);
+    void CarregarCVMatf(cv::Mat cvMat, int indexRot, int indexParam, bool escrita);
+    void CarregarCVMatui(cv::Mat cvMat, int indexRot, int indexParam, bool escrita);
     void CarregarBuffer(float *buffer, int tam, int indexRot, int indexParam, bool escrita);
     void CarregarBuffer(int *buffer, int tam, int indexRot, int indexParam, bool escrita);
     void CarregarFloat(float f,int indexRot,int indexParam);
     void CarregarInt(int in,int indexRot,int indexParam);
-    void LerBufferImg(cv::Mat &cvMat, int indexParam);
+    void LerBufferImgf(cv::Mat &cvMat, int indexParam);
+    void LerBufferImgui(cv::Mat &cvMat, int indexParam);
     void LerBuffer(float *buffer, int tam, int indexParam);
     void LerBuffer(int *buffer, int tam, int indexParam);
 private:

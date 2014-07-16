@@ -66,7 +66,37 @@ OCLutil::OCLutil(cl_device_type type,std::string arq,std::string buildOptions,st
     cl::Program program = cl::Program(context, source);
 
     VECTOR_CLASS<cl::Device> devices = context.getInfo<CL_CONTEXT_DEVICES>();
+    std::string deviceInfo;
+    cl_ulong memInfo;
+    size_t tam;
+    cl_uint clUnit;
+    int indexDev = 0;
+    int maxU = 0;
+    for (int i = 0; i < devices.size(); ++i)
+    {
+        devices[i].getInfo((cl_device_info) CL_DEVICE_NAME, &deviceInfo);
+        std::cout << "Device info: " << deviceInfo << std::endl;
+        devices[i].getInfo((cl_device_info) CL_DEVICE_VERSION, &deviceInfo);
+        std::cout << "Versão CL: " << deviceInfo << std::endl;
+        devices[i].getInfo((cl_device_info) CL_DRIVER_VERSION, &deviceInfo);
+        std::cout << "Versão Driver: " << deviceInfo << std::endl;
+        devices[i].getInfo((cl_device_info) CL_DEVICE_GLOBAL_MEM_SIZE, &memInfo);
+        std::cout << "Memoria Global: " << memInfo << std::endl;
+        devices[i].getInfo((cl_device_info) CL_DEVICE_LOCAL_MEM_SIZE, &memInfo);
+        std::cout << "Memoria Local: " << memInfo << std::endl;
+        devices[i].getInfo((cl_device_info) CL_DEVICE_LOCAL_MEM_SIZE, &tam);
+        std::cout << "Max tamanho Work-group: " << tam << std::endl;
+        devices[i].getInfo((cl_device_info) CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, &clUnit);
+        std::cout << "Max dimensao: " << clUnit << std::endl;
+        devices[i].getInfo((cl_device_info) CL_DEVICE_MAX_COMPUTE_UNITS, &clUnit);
+        std::cout << "Unidades CL: " << clUnit << std::endl;
+        std::cout << "*********************************" << std::endl;
 
+        if((int)clUnit>maxU){
+            indexDev = i;
+            maxU = (int)clUnit;
+        }
+    }
 
     // Build program for these specific devices
     cl_int error = program.build(devices, buildOptions.c_str());
@@ -74,7 +104,8 @@ OCLutil::OCLutil(cl_device_type type,std::string arq,std::string buildOptions,st
         std::cout << "Build log:" << std::endl << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(devices[0]) << std::endl;
     }
 
-    queue = cl::CommandQueue(context, devices[0]);
+    std::cout << "Index Dispositino selecionado: " << indexDev << std::endl;
+    queue = cl::CommandQueue(context, devices[indexDev]);
 
     int posi = 0;
     int posf = 0;
@@ -93,7 +124,7 @@ OCLutil::OCLutil(cl_device_type type,std::string arq,std::string buildOptions,st
     }
 }
 
-void OCLutil::CarregarCVMat(cv::Mat cvMat, int indexRot, int indexParam, bool escrita){
+void OCLutil::CarregarCVMatf(cv::Mat cvMat, int indexRot, int indexParam, bool escrita){
 
     cl_mem_flags flags = 0;
     if(escrita){
@@ -102,18 +133,40 @@ void OCLutil::CarregarCVMat(cv::Mat cvMat, int indexRot, int indexParam, bool es
         flags = CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR;
     }
 
-        cvMat.convertTo(cvMat,CV_32FC3);
-        cv::cvtColor(cvMat,cvMat,CV_BGR2RGBA);     
+    cvMat.convertTo(cvMat,CV_32FC3);
+    cv::cvtColor(cvMat,cvMat,CV_BGR2RGBA);
 
-        cvImg.push_back(cvMat);
+    cvImg.push_back(cvMat);
 
-        cl::Image2D clImage = cl::Image2D(context, flags,
-                                          cl::ImageFormat(CL_RGBA,CL_FLOAT), cvImg.back().cols,
-                                          cvImg.back().rows, 0, cvImg.back().data);
+    cl::Image2D clImage = cl::Image2D(context, flags,
+                                      cl::ImageFormat(CL_RGBA,CL_FLOAT), cvImg.back().cols,
+                                      cvImg.back().rows, 0, cvImg.back().data);
 
-        climg.push_back(clImage);
+    climg.push_back(clImage);
 
-        rotina[indexRot].setArg(indexParam,clImage);
+    rotina[indexRot].setArg(indexParam,clImage);
+}
+
+void OCLutil::CarregarCVMatui(cv::Mat cvMat, int indexRot, int indexParam, bool escrita){
+
+    cl_mem_flags flags = 0;
+    if(escrita){
+        flags = CL_MEM_WRITE_ONLY | CL_MEM_COPY_HOST_PTR;
+    }else{
+        flags = CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR;
+    }
+
+    cv::cvtColor(cvMat,cvMat,CV_BGR2RGBA);
+
+    cvImg.push_back(cvMat);
+
+    cl::Image2D clImage = cl::Image2D(context, flags,
+                                      cl::ImageFormat(CL_RGBA,CL_UNORM_INT8), cvImg.back().cols,
+                                      cvImg.back().rows, 0, cvImg.back().data);
+
+    climg.push_back(clImage);
+
+    rotina[indexRot].setArg(indexParam,clImage);
 }
 
 void OCLutil::Exec(int indexRot,cl::NDRange tamGlobal,cl::NDRange tamLoc){
@@ -165,7 +218,7 @@ void OCLutil::CarregarBuffer(int *buffer,int tam, int indexRot, int indexParam,b
     clbffer.push_back(clint);
 }
 
-void OCLutil::LerBufferImg(cv::Mat &cvMat, int indexParam){
+void OCLutil::LerBufferImgf(cv::Mat &cvMat, int indexParam){
 
     cl::size_t<3> origin;
     origin[0] = 0;origin[1] = 0;origin[2] = 0;
@@ -174,17 +227,39 @@ void OCLutil::LerBufferImg(cv::Mat &cvMat, int indexParam){
     region[0] = cvMat.cols;region[1] = cvMat.rows;region[2] = 1;
 
     cl_int error = queue.enqueueReadImage(climg[indexParam], CL_TRUE,
-                            origin, region, 0, 0,
-                            cvImg[indexParam].data, NULL, NULL);
+                                          origin, region, 0, 0,
+                                          cvImg[indexParam].data, NULL, NULL);
 
     cvMat = cv::Mat(cvImg[indexParam]);
+    cv::cvtColor(cvMat,cvMat,CV_RGBA2BGR);
+    cvMat.convertTo(cvMat,CV_8UC3);
 
     if(error != 0){
         std::cout <<"Error ao ler: "<<error<< std::endl;
     }
 }
 
-void OCLutil::LerBuffer(float *buffer, int tam, int indexParam){    
+void OCLutil::LerBufferImgui(cv::Mat &cvMat, int indexParam){
+
+    cl::size_t<3> origin;
+    origin[0] = 0;origin[1] = 0;origin[2] = 0;
+
+    cl::size_t<3> region;
+    region[0] = cvMat.cols;region[1] = cvMat.rows;region[2] = 1;
+
+    cl_int error = queue.enqueueReadImage(climg[indexParam], CL_TRUE,
+                                          origin, region, 0, 0,
+                                          cvImg[indexParam].data, NULL, NULL);
+
+    cvMat = cv::Mat(cvImg[indexParam]);
+    cv::cvtColor(cvMat,cvMat,CV_RGBA2BGR);
+
+    if(error != 0){
+        std::cout <<"Error ao ler: "<<error<< std::endl;
+    }
+}
+
+void OCLutil::LerBuffer(float *buffer, int tam, int indexParam){
     queue.enqueueReadBuffer(clbffer[indexParam],CL_TRUE,0,sizeof(float)*(tam),buffer);
 }
 

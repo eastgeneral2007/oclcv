@@ -41,3 +41,14 @@ __kernel void sub(__read_only image2d_t imgEnt1,
 	sum[y] += (diff.x+diff.y+diff.z); 
 	
 }
+
+__kernel void copiar(
+        __read_only image2d_t imgEnt,
+        __write_only image2d_t imgSaida
+    ) {
+
+    const int2 pos = {get_global_id(0), get_global_id(1)};
+    uint4 pixel = read_imageui(imgEnt,sampler,pos);
+
+    write_imageui(imgSaida,pos,pixel);
+}

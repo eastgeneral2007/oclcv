@@ -29,10 +29,10 @@ int main(int argc, char** argv)
 
     if (withOCLUtil)
     {
-        OCLutil ocl(CL_DEVICE_TYPE_GPU,"imgProc.cl","","paracinza,sub",2);
+        OCLutil ocl(CL_DEVICE_TYPE_GPU,"imgProc.cl","","paracinza,sub,copiar",3);
 
-        ocl.CarregarCVMat(image1, 1, 0, false);
-        ocl.CarregarCVMat(image2, 1, 1, false);
+        ocl.CarregarCVMatf(image1, 1, 0, false);
+        ocl.CarregarCVMatf(image2, 1, 1, false);
 
         image1.convertTo(image1,CV_32FC3);
         image2.convertTo(image2,CV_32FC3);
@@ -42,13 +42,13 @@ int main(int argc, char** argv)
         cv::Mat imgSaida(image1.size(),CV_32FC3);
         cv::cvtColor(imgSaida,imgSaida,CV_BGR2RGBA);
 
-        ocl.CarregarCVMat(imgSaida, 1, 2, true);
+        ocl.CarregarCVMatf(imgSaida, 1, 2, true);
                 
         ocl.CarregarBuffer(sums,image1.rows, 1, 3, true);
 
         ocl.Exec(1,cl::NDRange(image1.cols, image1.rows),cl::NullRange);
 
-        ocl.LerBufferImg(imgSaida, 2);
+        ocl.LerBufferImgf(imgSaida, 2);
         ocl.LerBuffer(sums,image1.rows, 0);
 
         for(int i = 0;i<image1.rows;i++){
@@ -64,6 +64,12 @@ int main(int argc, char** argv)
 
         cv::imshow("entrada",image1);
         cv::imshow("saida",imgSaida);
+
+        ocl.CarregarCVMatui(image1,2,0,false);
+        ocl.CarregarCVMatui(imgSaida,2,1,true);
+        ocl.Exec(2,cl::NDRange(image1.cols, image1.rows),cl::NullRange);
+        ocl.LerBufferImgui(imgSaida,4);
+        cv::imshow("saidaCopy",imgSaida);
     }
     else 
     {
